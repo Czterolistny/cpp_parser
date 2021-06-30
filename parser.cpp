@@ -18,6 +18,8 @@ public:
 		if( !opt_exist ){
 			args.at(0) = opt;
 			arg_vec.push_back(args);
+			std::vector<int> cnt = {opt_arg_cnt_min, opt_arg_cnt_max};
+			args_cnt.push_back(std::make_pair(opt, cnt));
 			return 0;
 		}else{
 			return -1;
@@ -28,17 +30,40 @@ public:
 		return add_opt(opt, opt_arg_cnt, opt_arg_cnt);
 	}
 	
-	int add_args(char **args, int arg_cnt){
+	int get_arg_cnt(char **args, int arg_len){
+		for(int i = 0; i < arg_len; ++i){
+			if( args[i][0] == '-'){
+				return i;
+			}
+		}
+		return arg_len;
+	}
+	int add_args(char **args, int arg_len){
 		
-		char **arg_end = &args[arg_cnt - 1];
-		for(int i = 0; i < arg_cnt; ++i){
+		char **arg_end = &args[arg_len - 1];
+		for(int i = 0; i < arg_len; ++i){
 
 			auto arg_vec_it = find_opt_it(*args);
 			if( arg_vec_it == arg_vec.end()){
 				return -1;
 			}
 			args++;
-			for(;i < arg_cnt; ++i){
+			int _arg_cnt = get_arg_cnt(args, arg_len - i - 1);
+			for(auto &pair : args_cnt){
+				if( pair.first == arg_vec_it->at(0) ){
+					if( _arg_cnt > pair.second.at(1) ){
+						std::cerr<< "Argument Error..." << std::endl <<_arg_cnt << " > than "\
+						 	<< pair.second.at(1)<<" max required"<<std::endl;
+						return -1;
+					}
+					if( _arg_cnt < pair.second.at(0) ){
+						std::cerr<< "Argument Error..." << std::endl <<_arg_cnt << " < than "\
+						 	<< pair.second.at(0)<<" min required"<<std::endl;
+						return -1;
+					}
+				}
+			}
+			for(;i < arg_len; ++i){
 				if( *args[0] == '-' ){
 					break;
 				}
@@ -77,17 +102,18 @@ private:
 	}
 	std::vector< std::vector<std::string> > arg_vec;
 	std::vector< std::string > args = {""};
+	std::vector< std::pair<std::string, std::vector<int> >> args_cnt;
 };
 
 int main(int argc, char **argv)
 {
 	Parser parser;
 	
-	parser.add_opt("-out", 1);
-	parser.add_opt("-in", 1);
+	parser.add_opt("-out", 1, 2);
+	parser.add_opt("-in", 2);
 	
 	if( parser.add_args(&argv[1], argc - 1) == -1){
-		std::cout<<"bad args"<<std::endl;
+		return -1;
 	}
 	//parser.print_args();
 
