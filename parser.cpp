@@ -5,13 +5,16 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+#include <functional>
 
 class Parser{
 public:
+
 	enum class ARG_TYPE{
 		MANDATORY = 0,
 		OPTIONAL = 1
 	};
+	
 	void print_help(void){
 		std::cout<<"Usage: "<< program_name <<" ";
 		for(auto &pair : args_info){
@@ -19,7 +22,10 @@ public:
 			if( (ARG_TYPE) pair.second.at(2) == ARG_TYPE::OPTIONAL ){
 				std::cout<<"(optional)";
 			}
-			std::cout<<" args=[" << pair.second.at(0) << "," << pair.second.at(1)<< "] ";
+			std::cout<<" args=[" << pair.second.at(0);
+			if( pair.second.at(0) != pair.second.at(1) )
+				std::cout << "," << pair.second.at(1);
+			std::cout<< "] ";
 		}
 		std::cout<<std::endl;
 	}
@@ -37,7 +43,7 @@ public:
 			args_info.push_back(std::make_pair(opt, info));
 			return 0;
 		}else{
-			std::cout<<"Parser error..."<<std::endl<< "Option [" << opt << "] already exist..."<<std::endl;
+			std::cerr<<"Parser error..."<<"  "<< "[" << opt << "] already exist"<<std::endl;
 			return -1;
 		}
 	}
@@ -56,27 +62,25 @@ public:
 		return arg_len;
 	}
 	int add_args(char **args, int arg_len){
-		std::string name( *(--args) ); args++;
-		program_name = &name[name.find("/") + 1];
+		std::string name( *(args++) );
+		program_name = &name[name.find_last_of("/") + 1];
 		char **arg_end = &args[arg_len - 1];
 		for(int i = 0; i < arg_len; ++i){
 
 			auto arg_vec_it = find_opt_it(*args);
 			if( arg_vec_it == arg_vec.end()){
-				std::cout<<"Argument error..."<<std::endl<<"Arg ["<< *args <<"] not in list.."<<std::endl;
+				std::cerr<<"Argument error..."<<"   "<<"["<< *args <<"] not in list"<<std::endl;
+				print_help();
 				return -1;
 			}
 
 			args++;
 			int _arg_cnt = get_arg_cnt(args, arg_len - i - 1);
-			for(auto &pair : args_info){
-				if( pair.first == arg_vec_it->at(0) ){
-					if( (_arg_cnt > pair.second.at(1)) || (_arg_cnt < pair.second.at(0)) ){
-						std::cerr<< "Argument error: "<< arg_vec_it->at(0) << std::endl;
-						return -1;
-					}
-				}
+			if( check_args_cnt(arg_vec_it, args_info, _arg_cnt) == -1 ){
+				print_help();
+				return -1;
 			}
+
 			for(;i < arg_len; ++i){
 				if( *args[0] == '-' ){
 					arg_vec_it->push_back(" ");
@@ -90,21 +94,13 @@ public:
 				args++;
 			}
 		}
-		for(auto &arg : arg_vec){
-			if( arg.size() < 2){
-				for(auto &pair : args_info){
-					if( pair.first == arg.at(0) ){
-						if( (ARG_TYPE) pair.second.at(2) == ARG_TYPE::MANDATORY ){
-							std::cout<<"Argument error..."<< std::endl <<"No argument: "<< arg.at(0) <<std::endl;
-							print_help();
-							return -1;
-						}
-					}
-				}
-			}
+		if( check_all_mandatory_args() == -1){
+			print_help();
+			return -1;
 		}
 		return 0;
 	}
+
 	std::vector< std::vector<std::string> > & get_parser_ctx(){
 		return arg_vec;
 	}
@@ -115,11 +111,12 @@ public:
 				std::cout<< *it <<" ";
 			}
 			std::cout<<std::endl;
-
 		}
 	}
+
 private:
 	typedef std::vector< std::vector<std::string> >::iterator pars_it;
+	typedef std::vector< std::pair<std::string, std::vector<int> >> args_info_type; 
 
 	std::string program_name;
 	pars_it find_opt_it(char *args){
@@ -130,7 +127,33 @@ private:
 		}
 		return arg_vec.end();
 	}
-
+	int check_args_cnt(pars_it it, args_info_type &args_info, int arg_cnt){
+		for(auto &pair : args_info){
+			if( pair.first == it->at(0) ){
+				if( (arg_cnt > pair.second.at(1)) || (arg_cnt < pair.second.at(0)) ){
+					std::cerr<< "Argument error..."<<"  "<< it->at(0) \
+						 << "["<< arg_cnt << "]" << std::endl;
+					return -1;
+				}
+			}
+		}
+		return 0;
+	}
+	int check_all_mandatory_args(){
+		for(auto &arg : arg_vec){
+			if( arg.size() < 2){
+				for(auto &pair : args_info){
+					if( pair.first == arg.at(0) ){
+						if( (ARG_TYPE) pair.second.at(2) == ARG_TYPE::MANDATORY ){
+							std::cerr<<"Argument error..."<<"  "<<"["<< arg.at(0) <<"]"<<" is not given" <<std::endl;
+							return -1;
+						}
+					}
+				}
+			}
+		}
+		return 0;	
+	}
 	std::vector< std::vector<std::string> > arg_vec;
 	std::vector< std::string > args = {""};
 	std::vector< std::pair<std::string, std::vector<int> >> args_info;
@@ -140,12 +163,12 @@ int main(int argc, char **argv)
 {
 	Parser parser;
 	
-	if( parser.add_opt("-out", 1, 2) || \
+	if( parser.add_opt("-out", 1) || \
 		parser.add_opt("-in", 2) || \
 		parser.add_opt("-xxd", 1, 2, Parser::ARG_TYPE::OPTIONAL) == -1) \
 			return -1;
 	
-	if( parser.add_args(&argv[1], argc - 1) == -1){
+	if( parser.add_args(&argv[0], argc - 1) == -1){
 		return -1;
 	}
 
