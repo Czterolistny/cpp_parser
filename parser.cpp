@@ -6,15 +6,15 @@
 #include <cstring>
 #include <string>
 
-typedef std::vector< std::vector<std::string> >::iterator pars_it;
-
 class Parser{
 public:
 
 	int add_opt(std::string opt, int opt_arg_cnt_min, int opt_arg_cnt_max){
 
 		int opt_exist = 0;
-		for_each(arg_vec.begin(), arg_vec.end(), [&opt_exist, &opt](auto &arg){if (arg.at(0) == opt) {opt_exist = 1; return; }});
+		for_each(arg_vec.begin(), arg_vec.end(), [&opt_exist, &opt](auto &arg) \
+			{if (arg.at(0) == opt) {opt_exist = 1; return; }});
+
 		if( !opt_exist ){
 			args.at(0) = opt;
 			arg_vec.push_back(args);
@@ -22,6 +22,7 @@ public:
 			args_cnt.push_back(std::make_pair(opt, cnt));
 			return 0;
 		}else{
+			std::cout<<"Parser error..."<<std::endl<< "Option [" << opt << "] already exist..."<<std::endl;
 			return -1;
 		}
 	}
@@ -51,14 +52,9 @@ public:
 			int _arg_cnt = get_arg_cnt(args, arg_len - i - 1);
 			for(auto &pair : args_cnt){
 				if( pair.first == arg_vec_it->at(0) ){
-					if( _arg_cnt > pair.second.at(1) ){
-						std::cerr<< "Argument Error..." << std::endl <<_arg_cnt << " > than "\
-						 	<< pair.second.at(1)<<" max required"<<std::endl;
-						return -1;
-					}
-					if( _arg_cnt < pair.second.at(0) ){
-						std::cerr<< "Argument Error..." << std::endl <<_arg_cnt << " < than "\
-						 	<< pair.second.at(0)<<" min required"<<std::endl;
+					if( (_arg_cnt > pair.second.at(1)) || (_arg_cnt < pair.second.at(0)) ){
+						std::cerr<< "Argument error: "<< arg_vec_it->at(0) << std::endl << "Required: "\
+						 	<< "[min,max] [" << pair.second.at(0) << "," << pair.second.at(1) << "]" <<std::endl;
 						return -1;
 					}
 				}
@@ -91,15 +87,17 @@ public:
 		}
 	}
 private:
+	typedef std::vector< std::vector<std::string> >::iterator pars_it;
+
 	pars_it find_opt_it(char *args){
-		auto arg_vec_it = arg_vec.begin();
-		for(; arg_vec_it != arg_vec.end(); ++arg_vec_it){
-			if( strcmp( arg_vec_it->at(0).c_str(), args ) == 0 ){
-				return arg_vec_it;
+		for(auto it = arg_vec.begin(); it != arg_vec.end(); ++it){
+			if( strcmp( it->at(0).c_str(), args ) == 0 ){
+				return it;
 			}
 		}
 		return arg_vec.end();
 	}
+
 	std::vector< std::vector<std::string> > arg_vec;
 	std::vector< std::string > args = {""};
 	std::vector< std::pair<std::string, std::vector<int> >> args_cnt;
@@ -109,13 +107,13 @@ int main(int argc, char **argv)
 {
 	Parser parser;
 	
-	parser.add_opt("-out", 1, 2);
-	parser.add_opt("-in", 2);
+	if( parser.add_opt("-out", 1, 2) || \
+		parser.add_opt("-out", 2) == -1) \
+			return -1;
 	
 	if( parser.add_args(&argv[1], argc - 1) == -1){
 		return -1;
 	}
-	//parser.print_args();
 
 	std::string opt1_arg1, opt2_arg1, opt2_arg2;
 	auto parser_process = [&opt1_arg1, &opt2_arg1, &opt2_arg2](auto ctx)
