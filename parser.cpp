@@ -27,8 +27,8 @@ int Parser::add_opt(std::string opt, int opt_arg_cnt_min, int opt_arg_cnt_max, \
 	}
 }
 
-int Parser::add_args(char **args, int arg_len){
-	std::string name( *(args++) );
+int Parser::parse(char **args, int arg_len){
+	std::string name( *(args++) ); arg_len--;
 	program_name = &name[name.find_last_of("/") + 1];
 	char **arg_end = &args[arg_len - 1];
 	for(int i = 0; i < arg_len; ++i){

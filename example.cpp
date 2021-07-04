@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	
-	if( parser.add_args(&argv[0], argc - 1) == -1){
+	if( parser.parse(argv, argc) == -1){
 		return -1;
 	}
 

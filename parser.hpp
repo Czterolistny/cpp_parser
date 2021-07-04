@@ -13,21 +13,21 @@ public:
 	
 	void print_help(void) const;
 
-	int add_opt(std::string opt, int opt_arg_cnt_min, int opt_arg_cnt_max, ARG_TYPE argType = ARG_TYPE::MANDATORY);
-
 	int add_opt(std::string opt, int opt_arg_cnt, ARG_TYPE argType = ARG_TYPE::MANDATORY);
+
+	int add_opt(std::string opt, int opt_arg_cnt_min, int opt_arg_cnt_max, ARG_TYPE argType = ARG_TYPE::MANDATORY);
+	
+	int parse(char **args, int arg_len);
 	
 	int get_arg_cnt(char **args, int arg_len) const;
-
-	int add_args(char **args, int arg_len);
-
-	std::vector< std::vector<std::string> > const & get_parser_ctx() const;
-
-	void print_args() const;
 
 	int get_arg(const std::string opt, std::string &arg, int nmb);
 
 	int get_arg_cnt(std::string &opt);
+	
+	std::vector< std::vector<std::string> > const & get_parser_ctx() const;
+
+	void print_args() const;
 
 private:
 
