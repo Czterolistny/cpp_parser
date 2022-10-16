@@ -38,8 +38,8 @@ private:
 	std::vector< std::vector<std::string> > arg_vec;
 	std::vector< std::string > args = {""};
 	std::vector< std::pair<std::string, std::vector<int> >> args_info;
-
-    pars_it find_opt_it(const char *args);
+	
+	pars_it find_opt_it(const char *args);
 
 	int check_args_cnt(pars_it it, args_info_type &args_info, int arg_cnt) const;
     
